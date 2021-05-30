@@ -109,7 +109,7 @@ Trip_Summary%>%ggplot(aes(x=Ride_Period, y=HoursRidden, group = Rider_Type, colo
   
 
 
-#Plot6: Monthly Average Hours Per Trip ------
+#Plot6: Monthly Average Hours Per Trip -----
 Trip_Summary %>% ggplot(aes(x=Ride_Period, y=AverageHoursPerTrip, group = Rider_Type, colour = Rider_Type)) +
   geom_line(lwd=1.5)+
   geom_point(size=3)+
