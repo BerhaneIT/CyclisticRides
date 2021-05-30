@@ -1,0 +1,354 @@
+---
+title: "How Does a Bike-Share Navigate Speedy Success"
+author: "Berhane Tekle"
+date: "5/23/2021"
+output:
+  
+html_document: default
+pdf_document: default
+---
+
+
+## INTRODUCTION
+
+<div style="text-align: justify">In 2016, Cyclistic launched a successful bike-share offering. Since then, the program has grown to a fleet of 5,824 bicycles that are geo-tracked and locked into a network of 692 stations across Chicago. The bikes can be unlocked from one station and returned to any other station in the system anytime. Until now, Cyclistic’s marketing strategy has relied on building general awareness and appealing to broad consumer segments. One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes, and annual memberships. Customers who purchase single-ride or full-day passes are referred to as ***casual riders***. Customers who purchase annual memberships are Cyclistic ***members***.</div>
+
+  
+<p><div style="text-align: justify">Cyclistic’s finance analysts have concluded that annual members are much more profitable than casual riders. Although the pricing flexibility helps Cyclistic attract more customers, the director of marketing believes that ***maximizing the number of annual members will be key to future growth***. Rather than creating a marketing campaign that targets all-new customers, she believes there is a particularly good chance to ***convert casual riders into members***. She notes that casual riders are already aware of the Cyclistic program and have chosen Cyclistic for their mobility needs. The Director of Marketing has set a clear goal: Design marketing strategies aimed at converting casual riders into annual members. To do that, the marketing analyst team needs to better understand:</div></p>
+
+I.	How do annual members and casual riders differ? 
+II.	Why casual riders would buy a membership? and
+III.	How digital media could affect their marketing tactics?
+
+
+## 1.	BUSINESS TASK STATEMENT
+
+<p><div style="text-align: justify">As a marketing analyst in the marketing department headed by the Director of    Marketing, I am assigned to analyzing Cyclistic historical bike trip data to identify trends to address the first question: How do annual members and casual riders use Cyclistic bikes differently?</div></p>
+<p><div style="text-align: justify">The following steps are followed to address this task:</div></p>
+1.	A clear statement of the business task as detailed above,
+2.	Description and preparation of all data sources used, 
+3.	Detailed log of cleaning and manipulation of data performed, and tools used to        transform the data,
+4.	A summary of analysis, 
+5.	Supporting visualizations and key findings, and
+6.	Recommendations based on the analysis.
+
+## 2.	PREPARATION
+<p><div style="text-align: justify">This case study is based on Cyclistic’s historical trip data from May 2020 to April 2021. The data has been made available by Motivate International Inc. <a href="https://divvy-tripdata.s3.amazonaws.com/index.html" target="_blank" >here</a> under this <a href= "https://www.divvybikes.com/data-license-agreement" target="_blank"> license</a>. It is a public data that can be used to explore how different customer types are using Cyclistic bikes.</div></p> 
+<p><div style="text-align: justify">Due to data-privacy issues, personally identifiable information such as customers’ addresses and credit card payment information are not included in this dataset. Besides, the analysis is limited to the available information of rides made with starting and ending docking stations information, time elapsed to complete a trip, and customer type. Hence, no revenue and cost analysis can be made from this dataset.</div></p>
+<p><div style="text-align: justify">I did not find any issues with regards to the data’s credibility and integrity. The data has been sorted and filtered to check for inaccuracies and anomalies such as looking for customer types that are neither casual nor regular, and starting dates that are earlier than ending dates, and any other missing information that will affect the analysis of the dataset. Except for relatively few entries with their ending dates “occurring” on or earlier than their starting dates, the data is generally consistent, reliable and UpToDate to give an adequate picture on the existence (or nonexistence) of clear pattern in bike usage differences between members and casual customers.</div></p>
+<p><div style="text-align: justify">The data is downloaded in 12 consecutive zip files (one for each month from May 2020 to April 2021) and saved in a local folder with copies of each extracted from and saved in Excel for reformatting and transformation in a separate folder.</div></p>
+<p><div style="text-align: justify">The information contained in the dataset, with the addition of calculated columns and aggregating the results therein has enabled me to discover a clear distinction in usage and purchases behavior between casual riders and subscribed members.</div></p>
+
+## 3.	PROCESSING
+<p><div style="text-align: justify">Excel is used to format, cleanse, and transform the data. For faster processing, scalability, and data security, transformed data is consolidated and stored in SQL Server. R is used for reporting and visualization, with reproducibility and sharing of the data in mind.</div></p>
+
+<p><div style="text-align: justify">For the purposes of this analysis the following formatting, cleansing and transformations have been performed on each Excel copy of the 12 files from May 2020 to April 2021:</div></p>
+
+**I.	Columns Removed:** 
+The following columns related to GPS coordinates of starting and ending rides are removed for they serve no purposes for our analysis: **[start_lat]**, **[start_lng]**, **[end_lat]**, and **[end_lng]**.
+
+**II.	Calculated Columns Added:** 
+
+
+ 1.**[ride_length]** to calculate hours elapsed between **[started_at]**    and **[ended_at]** and  reformatted as numeric data type. E.g., 1.50    is equivalent to 90 minutes.</div></p>
+
+ 2.**[Period]** to calculate month and year for the [started_at] ride      date in “mmmm, yyyy” format.
+ 
+ 3.**[day_of_week]** to calculate the day of the week for the              [started_at] ride date to get an insight on day-related riding habits    of customers, if required.
+ 
+ 4.**[season]** to calculate season for the [started_at] ride date to      get an insight on the effect of season on customers’ riding habits      and preferences, if required. 
+
+**III.	Rows Removed:**
+<p><div style="text-align: justify">The following records are removed from the dataset:Records where **[started_at]** occurred on or later than **[ended_at]**.</div></p>
+<p><div style="text-align: justify">*NOTE: Out of a total of 3,712,549   number of records, a total 10,096 number of such entries have been      removed and saved in a separate sub-folder. They are about 0.27% of the  total number of entries and are too immaterial for their removal to     alter the outcome of this study in any meaningful way.*</div></p>
+
+### 4.	ANALYSIS
+<div style="text-align: justify">The following steps have been taken to organize and get the data ready for analysis:
+
+I.	Creating a database in SQL Server: A new database ***CyclisticRides*** is created in SQL Server 2019 Developer Edition. All the 12 cleansed and transformed excel trip data files from May 2020 to April 2021 have been loaded to the database with *Data Source* as Excel 2016 and *Destination* as Microsoft OLE DB PROVIDER FOR SQL SERVER.
+
+II.	A new table **Trip_data** is built by merging the cleansed twelve tables using the following SQL query.
+```{sql MergingTables, eval=FALSE}
+SELECT * INTO Trip_Data
+FROM (
+      SELECT * FROM TripData_202005
+      UNION
+      SELECT * FROM TripData_202006
+      UNION
+      SELECT * FROM TripData_202007
+      UNION
+      SELECT * FROM TripData_202008
+      UNION
+      SELECT * FROM TripData_202009
+      UNION
+      SELECT * FROM TripData_202010
+      UNION
+      SELECT * FROM TripData_202011
+      UNION
+      SELECT * FROM TripData_202012
+      UNION
+      SELECT * FROM TripData_202101
+      UNION
+      SELECT * FROM TripData_202102
+      UNION
+      SELECT * FROM TripData_202103
+      UNION
+      SELECT * FROM TripData_202104) AS tripdata
+```
+
+III. Two summary tables are created out of the consolidated trip_data. They are:
+<p>-**[Trips_Summary]** to show a summary of trips taken, hours ridden, and average hours/trip for each month from May 2020 to April 2021 by each group of customers, and</p>
+**-[Grand_Summary]** to show a summary of a sum of trips taken, hours ridden, and average hours/trip for the year from May 1, 2020 to April 30, 2021 by each        group of customers.</p>
+<p>The following queries are used to build each respective table:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***Trips Summary:***
+```{sql SummarizeTrip_Data, eval=FALSE}
+SELECT * INTO Trips_Summary
+FROM
+
+(SELECT CAST(YEAR(started_at) AS varchar)+'-'+ RIGHT('0' + RTRIM(MONTH(started_at)), 2)Ride_Period
+      ,[Period]
+      ,[Customer_Type]
+      ,COUNT(ride_length) AS NumberOfTrips
+	  ,SUM(ride_length) AS HoursRidden
+	  ,CAST(AVG(ride_length) AS Decimal(38,2)) AS AverageHoursPerTrip
+	  
+  FROM [CyclisticRides].[dbo].[Trip_Data]
+  GROUP BY CAST(YEAR(started_at) AS varchar)+'-'+ RIGHT('0' + RTRIM(MONTH(started_at)), 2),Period,customer_type
+  ) AS TS;
+```
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;***Grand Summary:***
+```{sql GrandSummary, eval=FALSE}
+SELECT * INTO Grand_Summary
+FROM
+(
+SELECT customer_type, 
+       COUNT(ride_length) as NumberOfTrips,
+	   SUM(ride_length) as HoursRidden, 
+	   CAST(AVG(ride_length) AS decimal(38,2))as AverageHoursPerTrip
+from Trip_Data
+GROUP BY customer_type
+) AS GS;
+```
+
+IV.	Connecting SQL Server database CyclisticRides to R for visualization and sharing findings: A new live connection using a DSN (named **R_Connections**) is created between SQL Server and R using ODBC to load the tables created in SQL Server into R Studio. The following packages are installed and loaded to accomplish this task:</div>
+
+```{r create_con, echo=TRUE, message=FALSE}
+library(odbc)
+library(DBI)
+library(devtools)
+
+data_connect <- dbConnect(odbc::odbc(), "R_Connections")
+
+```
+
+v. Accessing and sorting the data in RStudio for analysis and visualization: 
+
+```{r echo=TRUE, paged.print=TRUE}
+Trip_Summary<-dbGetQuery(data_connect,'Select Ride_Period, Period AS Ride_Period_Description, Rider_Type, NumberOfTrips, HoursRidden, AverageHoursPerTrip FROM Trips_Summary Order by Ride_Period')
+Grand_Summary<-dbGetQuery(data_connect,'Select * from Grand_Summary ORDER BY Rider_Type DESC')
+
+```
+
+<p><div style="text-align: justify">Following are remaining pre-installed packages loaded to create our reports and visualizations:</div></p>
+
+
+```{r load_packages, echo=TRUE, message=FALSE}
+library(tidyverse)
+library(readr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(knitr)
+library(flexdashboard)
+library(gridExtra)
+```
+.........................................................................
+
+### 5. FINDINGS
+
+<p><div style="text-align: justify"> As shown in the **analysis** step, we have completed the necessary tasks to organize, access and summarize the data to see how and to what extent the two groups of customers (subscribed members and casual riders) differ in their bike usage in terms of frequency and ride length in hours.</p>
+
+<p><div style="text-align: justify">Following is the resultset of the **[Grand Summary]** table and the **[Trips Summary]** table accompanied by their respective visualizations that will answer our business question: **How do annual members and casual riders use Cyclistic bikes differently?**</p>
+
+<p><div style="text-align: justify">Let's start with yearly totals before we examine monthly figures. The following code will fetch the Grand_Summary table and load it to our report:</p>
+
+
+```{r TotalTripsandHours, echo=TRUE}
+knitr::kable(Grand_Summary,digits = 2, format.args = list(big.mark = ",", 
+  scientific = FALSE), caption = "Fig.1-GRAND SUMMARY:Total Number of Trips Taken and Hours Ridden with Average Hours/Trip")
+
+```
+........................................................................
+
+
+**Fig.1.1**
+
+```{r Plot1, echo=FALSE}
+Grand_Summary%>%ggplot(aes(x = Rider_Type, y = NumberOfTrips, fill=Rider_Type)) + 
+  geom_bar(width =0.75, stat = "identity",  show.legend = FALSE)+
+  ggtitle("Number of Trips by Members and Casual Riders")+
+  labs(x=element_blank(), y="Trips", subtitle = "From May 2020 To April 2021")+
+  theme(plot.title = element_text(face="bold", size=12, hjust=0.5)) +
+  theme(axis.title = element_text(face="bold", size=11))+
+  theme(plot.subtitle = element_text(face="bold", size=10, hjust=0.5))+
+  theme(text = element_text(size=13, face="bold"))+
+  theme(axis.text.y=element_blank())+
+  geom_text(aes(label = format(NumberOfTrips, big.mark=",")), hjust = 0.5, vjust=5,fontface="bold", colour = "black")
+
+```
+<p>*Members bike more frequently than casual riders.*</p>
+........................................................................
+
+
+**Fig.1.2**
+
+```{r Plot2, echo=FALSE}
+Grand_Summary%>%ggplot(aes(x = Rider_Type, y = HoursRidden, fill=Rider_Type)) + 
+  geom_bar(width =0.75,stat = "identity", orientation = "Horizaontal", show.legend = FALSE)+
+  ggtitle("Hours Ridden by Members and Casual Riders")+
+  labs(x=element_blank(), y="Hours", subtitle = "May 2020 to April 2021")+
+  theme(plot.title = element_text(face="bold", size=15, hjust=0.5)) +
+  theme(axis.title = element_text(face="bold", size=11))+
+  theme(plot.subtitle = element_text(face="bold", size=11, hjust=0.5))+
+  theme(text = element_text(size=13, face="bold"))+
+  theme(axis.text.y=element_blank())+
+  geom_text(aes(label = format(HoursRidden, big.mark=",")), hjust = 0.5, vjust=5, fontface="bold", colour = "black")
+```
+<p>*While Members bike more frequently than casual riders, casual riders usually take longer trips.*</p>
+........................................................................
+
+
+**Fig.1.3**
+
+```{r Plot3, echo=FALSE}
+Grand_Summary%>%ggplot(aes(x = Rider_Type, y = AverageHoursPerTrip, fill=Rider_Type)) + 
+  geom_bar(width =0.75,stat = "identity", orientation = "Horizaontal", show.legend = FALSE)+
+  ggtitle("Overall Average Hours Per Trip")+
+  labs(x=element_blank(), y="Average Hours/Trip", subtitle = "May 2020 to April 2021")+
+  theme(plot.title = element_text(face="bold", size=15, hjust=0.5)) +
+  theme(axis.title = element_text(face="bold", size=11))+
+  theme(plot.subtitle = element_text(face="bold", size=11, hjust=0.5))+
+  theme(text = element_text(size=13, face="bold"))+
+  geom_text(aes(label = AverageHoursPerTrip), hjust = 0.5, vjust=5, fontface="bold", colour = "black")
+```
+<p>*On average casual riders ride (or keep the bikes ) for approximately three times longer than members.*</p>
+........................................................................
+
+<p><div style="text-align: justify">Now let's examine the monthly figures that make up the totals we analyzed previously. The following code will fetch and load the monthly Trip_Summary into our report:</p>
+```{r MonthlyTripsandHours, echo=TRUE}
+knitr::kable(Trip_Summary, caption = "Fig.2-TRIP SUMMARY:Monthly Trips Taken and Hours Ridden From May 1, 2020 to April 30, 2021", digits = 2, format.args = list(big.mark = ",", 
+  scientific = FALSE))
+```
+........................................................................
+
+
+**Fig.2.1**
+
+```{r Plot4, echo=FALSE}
+Trip_Summary%>%ggplot(aes(x=Ride_Period, y=NumberOfTrips, group = Rider_Type, colour = Rider_Type))   + 
+  geom_line(lwd=1.5)+
+  geom_point(size=3)+
+  ggtitle("Number of Trips by Members and Casual Riders")+
+  labs(x=element_blank(), y="Trips", subtitle = "From May 2020 To April 2021", col="Rider Type")+
+  theme(plot.title = element_text(face="bold", size=15, hjust=0.5)) +
+  theme(axis.title = element_text(face="bold", size=11))+
+  theme(plot.subtitle = element_text(face="bold", size=11, hjust=0.5))+
+  scale_y_continuous(labels = comma)+
+  theme(axis.text.x=element_text(size=10, angle=45, face="bold", hjust=0.95))+
+  theme(axis.text.y=element_text(size=10, face="bold"))+
+  theme(legend.title = element_text(colour="Black", size=11, face="bold"))+
+  theme(legend.text = element_text(colour="Black", size=10,face="bold"))+
+  theme(legend.position=c(.9,.9))+
+  guides(fill=guide_legend(title="Rider Type"))+
+  scale_x_discrete(breaks=c("2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04"), labels=c(" 2020   MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","2021   JAN","FEB","MAR","APR"))
+
+```
+<p>*while Members biked more frequently than Casual Riders throughout the year, both groups of riders exhibit similar usage behavior on a month-to-month basis, which is generally affected by season.*</p>
+........................................................................
+
+
+**Fig.2.2**
+
+```{r Plot5, echo=FALSE}
+Trip_Summary%>%ggplot(aes(x=Ride_Period, y=HoursRidden, group = Rider_Type, colour = Rider_Type)) + 
+  geom_line(lwd=1.5)+
+  geom_point(size=3)+
+  ggtitle("Hours Ridden by Members and Casual Riders")+
+  labs(x=element_blank(), y="Hours", subtitle = "May 2020 to April 2021", col="Rider Type")+
+  theme(plot.title = element_text(face="bold", size=15, hjust=0.5)) +
+  theme(axis.title = element_text(face="bold", size=11))+
+  theme(plot.subtitle = element_text(face="bold", size=11, hjust=0.5))+
+  scale_y_continuous(labels = comma)+
+  theme(axis.text.x=element_text(size=10, angle=45, face="bold", hjust = 0.95))+
+  theme(axis.text.y=element_text(size=10, face="bold"))+
+  theme(legend.title = element_text(colour="Black", size=11, face="bold"))+
+  theme(legend.text = element_text(colour="Black", size=10,face="bold"))+
+  theme(legend.position=c(.9,.9))+
+  scale_x_discrete(breaks=c("2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04"), labels=c(" 2020   MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","2021   JAN","FEB","MAR","APR"))
+  
+```
+<p>*In terms of ride length, casual riders generally bike (or keep the bikes) for far longer than Members. On the other hand Members tend to exhibit relatively more consistent usage behavior, while usage of casual riders is highly affected by season.*</p>
+........................................................................
+
+
+**Fig.2.3**
+
+```{r Plot6, echo=FALSE}
+Trip_Summary %>% ggplot(aes(x=Ride_Period, y=AverageHoursPerTrip, group = Rider_Type, colour = Rider_Type)) +
+  geom_line(lwd=1.5)+
+  geom_point(size=3)+
+  ggtitle("Average Hours Per Trip")+
+  labs(x=element_blank(), y="Hours", subtitle = "May 2020 to April 2021", col="Rider Type")+
+  theme(plot.title = element_text(face="bold", size=15, hjust=0.5)) +
+  theme(axis.title = element_text(face="bold", size=11))+
+  theme(plot.subtitle = element_text(face="bold", size=11, hjust=0.5))+
+  theme(axis.text.x=element_text(size=10, angle=45, face="bold", hjust = 0.95))+
+  theme(axis.text.y=element_text(size=10, face="bold"))+
+  theme(legend.title = element_text(colour="Black", size=11, face="bold"))+
+  theme(legend.text = element_text(colour="Black", size=10,face="bold"))+
+  theme(legend.position=c(.9,.9))+
+  scale_x_discrete(breaks=c("2020-05","2020-06","2020-07","2020-08","2020-09","2020-10","2020-11","2020-12","2021-01","2021-02","2021-03","2021-04"), labels=c(" 2020   MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","2021   JAN","FEB","MAR","APR"))
+  
+```
+<p>*On average Casual Riders rode (or kept the bikes) for far longer than Members throughout the year.*</p>
+.........................................................................
+
+
+### 6. CONCLUSION
+
+<p><div style="text-align: justify">As our visualizations clearly demonstrated, there is a clear pattern in bike usage differences between Members and Casual Riders.</p>
+
+<p><div style="text-align: justify">Members took 640,730 more trips than Casual Riders from May 1, 2020 to April 30, 2021. ***This tells us that Members tend to ride more regularly and frequently than Casual Riders.***</p>
+
+<p><div style="text-align: justify">In terms of ride length, Casual Riders rode  more than twice as Members in total hours in the same period.</p> 
+
+<p><div style="text-align: justify">Relative to number of trips taken, Casual Riders rode ***almost three times longer*** than Members on any given trip.On average, Members rode no more than 16 minutes (0.26 hrs) per trip; which essentially makes them SINGLE-RIDE users, as opposed to casual riders who tended to use less often but rode about 44 minutes (0.73 hrs) per trip.</p>
+
+When we look on a month-to-month basis, the same usage behavior is observed:
+
+-In terms of number of trips, Members took more trips than Casual Riders  EVERY month.
+
+-In terms of total monthly hours ridden, Casual Riders rode more hours  on all months except DEC, JAN, and FEB.
+
+-While both groups' frequency and length of usage is similarly affected by season, Casual Riders' length of usage is highly seasonal compared to that of Members', who tend to exhibit more regularity regardless of season.
+
+<p><div style="text-align: justify">***From this observation, we can conclude that as riders become members, they tend to be more regular and frequent users but time-sensitive in their biking usage.***</p>  
+
+<p><div style="text-align: justify">As pointed out earlier, the financial analysts have already found out that Annual Members are much more profitable than Casual Riders. And the Marketing Manager believes converting Casual Riders into Members will be key to future growth. In light of our findings, moving Casual Riders to Annual Membership would result in generating larger revenue owing to increase in annual membership fee collections while at the same time ***potentially*** sacrificing earnings that comes from extra charges for usage that exceeds the single-ride time limit, much of which happens to be coming from ***casual riding***.</p>
+
+<p><div style="text-align: justify">If we could get information on the existing number of Members and Casual Riders that make up the dataset, in addition to operating costs directly related to Membership and Casual Riding per period or rider (if any), further cost-benefit analysis could be made with regards to shifting the existing casual riders to member riders.</p> 
+
+
+
+
+
+
+
+
+
+
+
